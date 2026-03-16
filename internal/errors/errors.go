@@ -40,5 +40,8 @@ var (
 
 // HandleError writes the error message to w.
 func HandleError(err error, w io.Writer) {
+	if err == nil {
+		return
+	}
 	fmt.Fprintln(w, err.Error())
 }
