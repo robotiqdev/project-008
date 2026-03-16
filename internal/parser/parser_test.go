@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	calcerrors "github.com/repo/calculator/internal/errors"
 	"github.com/repo/calculator/internal/parser"
 )
 
@@ -118,6 +119,87 @@ func TestCommandStruct_LiteralAssignment(t *testing.T) {
 	}
 	if cmd.B != "5" {
 		t.Errorf("Command.B = %q, want %q", cmd.B, "5")
+	}
+}
+
+// TestTokenize_BasicExpression verifies Tokenize splits a simple "A op B" expression correctly.
+func TestTokenize_BasicExpression(t *testing.T) {
+	tokens, err := parser.Tokenize("3 + 4")
+	if err != nil {
+		t.Fatalf("Tokenize(%q) unexpected error: %v", "3 + 4", err)
+	}
+	expected := []string{"3", "+", "4"}
+	if !reflect.DeepEqual(tokens, expected) {
+		t.Errorf("Tokenize(%q) = %v, want %v", "3 + 4", tokens, expected)
+	}
+}
+
+// TestTokenize_SingleToken verifies Tokenize returns ErrInvalidTokenCount for a single non-command token.
+func TestTokenize_SingleToken(t *testing.T) {
+	tokens, err := parser.Tokenize("3")
+	if tokens != nil {
+		t.Errorf("Tokenize(%q) tokens = %v, want nil", "3", tokens)
+	}
+	if err != calcerrors.ErrInvalidTokenCount {
+		t.Errorf("Tokenize(%q) error = %v, want ErrInvalidTokenCount", "3", err)
+	}
+}
+
+// TestTokenize_TooManyTokens verifies Tokenize returns ErrInvalidTokenCount when more than 3 tokens are provided.
+func TestTokenize_TooManyTokens(t *testing.T) {
+	tokens, err := parser.Tokenize("3 + 4 5")
+	if tokens != nil {
+		t.Errorf("Tokenize(%q) tokens = %v, want nil", "3 + 4 5", tokens)
+	}
+	if err != calcerrors.ErrInvalidTokenCount {
+		t.Errorf("Tokenize(%q) error = %v, want ErrInvalidTokenCount", "3 + 4 5", err)
+	}
+}
+
+// TestTokenize_MultipleSpaces verifies Tokenize handles multiple/mixed whitespace between tokens.
+func TestTokenize_MultipleSpaces(t *testing.T) {
+	tokens, err := parser.Tokenize("  10  *  2  ")
+	if err != nil {
+		t.Fatalf("Tokenize(%q) unexpected error: %v", "  10  *  2  ", err)
+	}
+	expected := []string{"10", "*", "2"}
+	if !reflect.DeepEqual(tokens, expected) {
+		t.Errorf("Tokenize(%q) = %v, want %v", "  10  *  2  ", tokens, expected)
+	}
+}
+
+// TestTokenize_EmptyString verifies Tokenize returns ErrInvalidTokenCount for an empty input.
+func TestTokenize_EmptyString(t *testing.T) {
+	tokens, err := parser.Tokenize("")
+	if tokens != nil {
+		t.Errorf("Tokenize(%q) tokens = %v, want nil", "", tokens)
+	}
+	if err != calcerrors.ErrInvalidTokenCount {
+		t.Errorf("Tokenize(%q) error = %v, want ErrInvalidTokenCount", "", err)
+	}
+}
+
+// TestTokenize_ExitCommand verifies Tokenize returns ["exit"] with no error for the exit command.
+func TestTokenize_ExitCommand(t *testing.T) {
+	tokens, err := parser.Tokenize("exit")
+	if err != nil {
+		t.Fatalf("Tokenize(%q) unexpected error: %v", "exit", err)
+	}
+	expected := []string{"exit"}
+	if !reflect.DeepEqual(tokens, expected) {
+		t.Errorf("Tokenize(%q) = %v, want %v", "exit", tokens, expected)
+	}
+}
+
+// TestTokenize_QuitCommand verifies Tokenize returns ["quit"] with no error for the quit command.
+func TestTokenize_QuitCommand(t *testing.T) {
+	tokens, err := parser.Tokenize("quit")
+	if err != nil {
+		t.Fatalf("Tokenize(%q) unexpected error: %v", "quit", err)
+	}
+	expected := []string{"quit"}
+	if !reflect.DeepEqual(tokens, expected) {
+		t.Errorf("Tokenize(%q) = %v, want %v", "quit", tokens, expected)
 	}
 }
 

@@ -3,6 +3,8 @@ package parser
 import (
 	"fmt"
 	"strings"
+
+	calcerrors "github.com/repo/calculator/internal/errors"
 )
 
 // Command holds the parsed tokens from a single calculator input line.
@@ -10,6 +12,14 @@ type Command struct {
 	Op string
 	A  string
 	B  string
+}
+
+// Tokenize splits a raw input line into tokens.
+// It returns a single-element slice for "exit" or "quit", a 3-element slice for
+// valid "A op B" expressions, or nil and ErrInvalidTokenCount otherwise.
+func Tokenize(line string) ([]string, error) {
+	_ = calcerrors.ErrInvalidTokenCount // stub: not yet implemented
+	return nil, nil
 }
 
 // ParseCommand parses a raw input line into a Command.
