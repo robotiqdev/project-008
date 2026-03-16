@@ -8,8 +8,117 @@ import (
 	calcerrors "github.com/repo/calculator/internal/errors"
 )
 
+// TestCalculate_Add_TableDriven_WordForm tests the "add" operator with multiple cases.
+func TestCalculate_Add_TableDriven_WordForm(t *testing.T) {
+	tests := []struct {
+		name string
+		a    float64
+		b    float64
+		want float64
+	}{
+		{"positive integers", 1, 1, 2},
+		{"both zero", 0, 0, 0},
+		{"negative and positive", -1, 1, 0},
+		{"floating point", 1.5, 2.5, 4.0},
+		{"large values", 1e15, 2e15, 3e15},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := calc.Calculate("add", tc.a, tc.b)
+			if err != nil {
+				t.Fatalf("Calculate(\"add\", %v, %v): unexpected error: %v", tc.a, tc.b, err)
+			}
+			if result != tc.want {
+				t.Errorf("Calculate(\"add\", %v, %v) = %v, want %v", tc.a, tc.b, result, tc.want)
+			}
+		})
+	}
+}
+
+// TestCalculate_Add_TableDriven_SymbolicForm tests the "+" operator with multiple cases.
+func TestCalculate_Add_TableDriven_SymbolicForm(t *testing.T) {
+	tests := []struct {
+		name string
+		a    float64
+		b    float64
+		want float64
+	}{
+		{"positive integers", 1, 1, 2},
+		{"both zero", 0, 0, 0},
+		{"negative and positive", -1, 1, 0},
+		{"floating point", 1.5, 2.5, 4.0},
+		{"large values", 1e15, 2e15, 3e15},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := calc.Calculate("+", tc.a, tc.b)
+			if err != nil {
+				t.Fatalf("Calculate(\"+\", %v, %v): unexpected error: %v", tc.a, tc.b, err)
+			}
+			if result != tc.want {
+				t.Errorf("Calculate(\"+\", %v, %v) = %v, want %v", tc.a, tc.b, result, tc.want)
+			}
+		})
+	}
+}
+
+// TestCalculate_Subtract_TableDriven_WordForm tests the "subtract" operator with multiple cases.
+func TestCalculate_Subtract_TableDriven_WordForm(t *testing.T) {
+	tests := []struct {
+		name string
+		a    float64
+		b    float64
+		want float64
+	}{
+		{"positive result", 5, 3, 2},
+		{"both zero", 0, 0, 0},
+		{"negative result", 1, 2, -1},
+		{"two negatives", -1, -1, 0},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := calc.Calculate("subtract", tc.a, tc.b)
+			if err != nil {
+				t.Fatalf("Calculate(\"subtract\", %v, %v): unexpected error: %v", tc.a, tc.b, err)
+			}
+			if result != tc.want {
+				t.Errorf("Calculate(\"subtract\", %v, %v) = %v, want %v", tc.a, tc.b, result, tc.want)
+			}
+		})
+	}
+}
+
+// TestCalculate_Subtract_TableDriven_SymbolicForm tests the "-" operator with multiple cases.
+func TestCalculate_Subtract_TableDriven_SymbolicForm(t *testing.T) {
+	tests := []struct {
+		name string
+		a    float64
+		b    float64
+		want float64
+	}{
+		{"positive result", 5, 3, 2},
+		{"both zero", 0, 0, 0},
+		{"negative result", 1, 2, -1},
+		{"two negatives", -1, -1, 0},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := calc.Calculate("-", tc.a, tc.b)
+			if err != nil {
+				t.Fatalf("Calculate(\"-\", %v, %v): unexpected error: %v", tc.a, tc.b, err)
+			}
+			if result != tc.want {
+				t.Errorf("Calculate(\"-\", %v, %v) = %v, want %v", tc.a, tc.b, result, tc.want)
+			}
+		})
+	}
+}
+
 // TestCalculate_Add_WordForm verifies that the "add" operator returns the sum of two operands.
-// This test is a placeholder scaffold — it will fail until arithmetic is implemented (TASK-4276).
 func TestCalculate_Add_WordForm(t *testing.T) {
 	result, err := calc.Calculate("add", 1.0, 2.0)
 	if err != nil {
