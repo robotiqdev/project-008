@@ -2,6 +2,7 @@ package calc_test
 
 import (
 	"errors"
+	"math"
 	"testing"
 
 	"github.com/repo/calculator/internal/calc"
@@ -262,6 +263,170 @@ func TestCalculate_KnownOps_ReturnNoError(t *testing.T) {
 				t.Errorf("Calculate(%q, 2.0, 1.0): unexpected error: %v", op, err)
 			}
 		})
+	}
+}
+
+// TestCalculate_Multiply_TableDriven_WordForm tests the "multiply" operator with multiple cases.
+func TestCalculate_Multiply_TableDriven_WordForm(t *testing.T) {
+	tests := []struct {
+		name string
+		a    float64
+		b    float64
+		want float64
+	}{
+		{"positive integers", 3, 4, 12},
+		{"multiply by zero", 0, 5, 0},
+		{"negative and positive", -2, 3, -6},
+		{"floating point", 1.5, 2, 3.0},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := calc.Calculate("multiply", tc.a, tc.b)
+			if err != nil {
+				t.Fatalf("Calculate(\"multiply\", %v, %v): unexpected error: %v", tc.a, tc.b, err)
+			}
+			if result != tc.want {
+				t.Errorf("Calculate(\"multiply\", %v, %v) = %v, want %v", tc.a, tc.b, result, tc.want)
+			}
+		})
+	}
+}
+
+// TestCalculate_Multiply_TableDriven_SymbolicForm tests the "*" operator with multiple cases.
+func TestCalculate_Multiply_TableDriven_SymbolicForm(t *testing.T) {
+	tests := []struct {
+		name string
+		a    float64
+		b    float64
+		want float64
+	}{
+		{"positive integers", 3, 4, 12},
+		{"multiply by zero", 0, 5, 0},
+		{"negative and positive", -2, 3, -6},
+		{"floating point", 1.5, 2, 3.0},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := calc.Calculate("*", tc.a, tc.b)
+			if err != nil {
+				t.Fatalf("Calculate(\"*\", %v, %v): unexpected error: %v", tc.a, tc.b, err)
+			}
+			if result != tc.want {
+				t.Errorf("Calculate(\"*\", %v, %v) = %v, want %v", tc.a, tc.b, result, tc.want)
+			}
+		})
+	}
+}
+
+// TestCalculate_Divide_TableDriven_WordForm tests the "divide" operator with multiple cases.
+func TestCalculate_Divide_TableDriven_WordForm(t *testing.T) {
+	tests := []struct {
+		name    string
+		a       float64
+		b       float64
+		want    float64
+		approx  bool
+		epsilon float64
+	}{
+		{"exact integer result", 10, 2, 5, false, 0},
+		{"fractional result", 7, 2, 3.5, false, 0},
+		{"repeating decimal", 1, 3, 1.0 / 3.0, true, 1e-9},
+		{"negative dividend", -6, 2, -3, false, 0},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := calc.Calculate("divide", tc.a, tc.b)
+			if err != nil {
+				t.Fatalf("Calculate(\"divide\", %v, %v): unexpected error: %v", tc.a, tc.b, err)
+			}
+			if tc.approx {
+				if math.Abs(result-tc.want) > tc.epsilon {
+					t.Errorf("Calculate(\"divide\", %v, %v) = %v, want ~%v (within %v)", tc.a, tc.b, result, tc.want, tc.epsilon)
+				}
+			} else {
+				if result != tc.want {
+					t.Errorf("Calculate(\"divide\", %v, %v) = %v, want %v", tc.a, tc.b, result, tc.want)
+				}
+			}
+		})
+	}
+}
+
+// TestCalculate_Divide_TableDriven_SymbolicForm tests the "/" operator with multiple cases.
+func TestCalculate_Divide_TableDriven_SymbolicForm(t *testing.T) {
+	tests := []struct {
+		name    string
+		a       float64
+		b       float64
+		want    float64
+		approx  bool
+		epsilon float64
+	}{
+		{"exact integer result", 10, 2, 5, false, 0},
+		{"fractional result", 7, 2, 3.5, false, 0},
+		{"repeating decimal", 1, 3, 1.0 / 3.0, true, 1e-9},
+		{"negative dividend", -6, 2, -3, false, 0},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := calc.Calculate("/", tc.a, tc.b)
+			if err != nil {
+				t.Fatalf("Calculate(\"/\", %v, %v): unexpected error: %v", tc.a, tc.b, err)
+			}
+			if tc.approx {
+				if math.Abs(result-tc.want) > tc.epsilon {
+					t.Errorf("Calculate(\"/\", %v, %v) = %v, want ~%v (within %v)", tc.a, tc.b, result, tc.want, tc.epsilon)
+				}
+			} else {
+				if result != tc.want {
+					t.Errorf("Calculate(\"/\", %v, %v) = %v, want %v", tc.a, tc.b, result, tc.want)
+				}
+			}
+		})
+	}
+}
+
+// TestCalculate_Divide_ByZero_WordForm verifies that dividing by zero with "divide" returns ErrDivByZero.
+func TestCalculate_Divide_ByZero_WordForm(t *testing.T) {
+	result, err := calc.Calculate("divide", 5.0, 0)
+	if result != 0 {
+		t.Errorf("Calculate(\"divide\", 5.0, 0) result = %v, want 0", result)
+	}
+	if err == nil {
+		t.Fatal("Calculate(\"divide\", 5.0, 0): expected ErrDivByZero, got nil")
+	}
+	if !errors.Is(err, calcerrors.ErrDivByZero) {
+		t.Errorf("Calculate(\"divide\", 5.0, 0): error = %v, want ErrDivByZero", err)
+	}
+}
+
+// TestCalculate_Divide_ByZero_SymbolicForm verifies that dividing by zero with "/" returns ErrDivByZero.
+func TestCalculate_Divide_ByZero_SymbolicForm(t *testing.T) {
+	result, err := calc.Calculate("/", 10.0, 0)
+	if result != 0 {
+		t.Errorf("Calculate(\"/\", 10.0, 0) result = %v, want 0", result)
+	}
+	if err == nil {
+		t.Fatal("Calculate(\"/\", 10.0, 0): expected ErrDivByZero, got nil")
+	}
+	if !errors.Is(err, calcerrors.ErrDivByZero) {
+		t.Errorf("Calculate(\"/\", 10.0, 0): error = %v, want ErrDivByZero", err)
+	}
+}
+
+// TestCalculate_Divide_ByZero_ErrorMessage verifies the error message for division by zero.
+func TestCalculate_Divide_ByZero_ErrorMessage(t *testing.T) {
+	_, err := calc.Calculate("divide", 1.0, 0)
+	if err == nil {
+		t.Fatal("Calculate(\"divide\", 1.0, 0): expected error, got nil")
+	}
+	want := "Error: division by zero"
+	if err.Error() != want {
+		t.Errorf("error message = %q, want %q", err.Error(), want)
 	}
 }
 
