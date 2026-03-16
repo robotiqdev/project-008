@@ -10,13 +10,13 @@ import (
 func Calculate(op string, a, b float64) (float64, error) {
 	switch op {
 	case "add", "+":
-		return 0, nil
+		return a + b, nil
 	case "subtract", "-":
-		return 0, nil
+		return a - b, nil
 	case "multiply", "*":
-		return 0, nil
+		return a * b, nil
 	case "divide", "/":
-		return 0, nil
+		return a / b, nil
 	default:
 		return 0, calcerrors.ErrUnknownOp
 	}
