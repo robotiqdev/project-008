@@ -1,6 +1,9 @@
 package errors
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 // ErrCode identifies the category of a calculator error.
 type ErrCode int
@@ -37,7 +40,5 @@ var (
 
 // HandleError writes the error message to w.
 func HandleError(err error, w io.Writer) {
-	// stub — not yet implemented
-	_ = err
-	_ = w
+	fmt.Fprintln(w, err.Error())
 }
