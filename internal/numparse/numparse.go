@@ -1,13 +1,22 @@
 package numparse
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+
+	calcerrors "github.com/robotiqdev/project-008/internal/errors"
+)
 
 // ParseNumber parses a string as a 64-bit floating point number.
 // Returns (0, error) if the string cannot be parsed.
 func ParseNumber(s string) (float64, error) {
-	v, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		return 0, err
+	v, parseErr := strconv.ParseFloat(s, 64)
+	if parseErr != nil {
+		return 0, &calcerrors.CalcError{
+			Code:    calcerrors.ErrCodeInvalidInput,
+			Message: fmt.Sprintf("Error: invalid numeric input: %q", s),
+			Wrapped: parseErr,
+		}
 	}
 	return v, nil
 }
