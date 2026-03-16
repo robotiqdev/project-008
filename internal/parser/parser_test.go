@@ -203,26 +203,139 @@ func TestTokenize_QuitCommand(t *testing.T) {
 	}
 }
 
-// TestParseCommand_StubExists is a stub test that confirms ParseCommand is callable.
-// The full behavioral tests will be added in TASK-4271.
-func TestParseCommand_StubExists(t *testing.T) {
-	// ParseCommand must exist and accept a string, returning (Command, error).
-	// This stub verifies the function signature compiles correctly.
-	cmd, err := parser.ParseCommand("3 + 5")
-
-	// With a full implementation, parsing "3 + 5" should produce
-	// Command{A: "3", Op: "+", B: "5"} with no error.
-	// The current stub returns an empty Command, so this test is expected to fail.
+// TestParseCommand_BasicArithmetic verifies ParseCommand(["3", "+", "4"]) returns
+// Command{Op:"+", A:"3", B:"4"} with no error.
+func TestParseCommand_BasicArithmetic(t *testing.T) {
+	tokens := []string{"3", "+", "4"}
+	cmd, err := parser.ParseCommand(tokens)
 	if err != nil {
-		t.Fatalf("ParseCommand(%q) unexpected error: %v", "3 + 5", err)
+		t.Fatalf("ParseCommand(%v) unexpected error: %v", tokens, err)
 	}
 	if cmd.A != "3" {
-		t.Errorf("ParseCommand(%q).A = %q, want %q", "3 + 5", cmd.A, "3")
+		t.Errorf("ParseCommand(%v).A = %q, want %q", tokens, cmd.A, "3")
 	}
 	if cmd.Op != "+" {
-		t.Errorf("ParseCommand(%q).Op = %q, want %q", "3 + 5", cmd.Op, "+")
+		t.Errorf("ParseCommand(%v).Op = %q, want %q", tokens, cmd.Op, "+")
 	}
-	if cmd.B != "5" {
-		t.Errorf("ParseCommand(%q).B = %q, want %q", "3 + 5", cmd.B, "5")
+	if cmd.B != "4" {
+		t.Errorf("ParseCommand(%v).B = %q, want %q", tokens, cmd.B, "4")
+	}
+}
+
+// TestParseCommand_WordOperator verifies ParseCommand(["10", "divide", "2"]) returns
+// Command{Op:"divide", A:"10", B:"2"} with no error.
+func TestParseCommand_WordOperator(t *testing.T) {
+	tokens := []string{"10", "divide", "2"}
+	cmd, err := parser.ParseCommand(tokens)
+	if err != nil {
+		t.Fatalf("ParseCommand(%v) unexpected error: %v", tokens, err)
+	}
+	if cmd.A != "10" {
+		t.Errorf("ParseCommand(%v).A = %q, want %q", tokens, cmd.A, "10")
+	}
+	if cmd.Op != "divide" {
+		t.Errorf("ParseCommand(%v).Op = %q, want %q", tokens, cmd.Op, "divide")
+	}
+	if cmd.B != "2" {
+		t.Errorf("ParseCommand(%v).B = %q, want %q", tokens, cmd.B, "2")
+	}
+}
+
+// TestParseCommand_ExitCommand verifies ParseCommand(["exit"]) returns
+// Command{Op:"exit"} with A and B empty, and no error.
+func TestParseCommand_ExitCommand(t *testing.T) {
+	tokens := []string{"exit"}
+	cmd, err := parser.ParseCommand(tokens)
+	if err != nil {
+		t.Fatalf("ParseCommand(%v) unexpected error: %v", tokens, err)
+	}
+	if cmd.Op != "exit" {
+		t.Errorf("ParseCommand(%v).Op = %q, want %q", tokens, cmd.Op, "exit")
+	}
+	if cmd.A != "" {
+		t.Errorf("ParseCommand(%v).A = %q, want empty string", tokens, cmd.A)
+	}
+	if cmd.B != "" {
+		t.Errorf("ParseCommand(%v).B = %q, want empty string", tokens, cmd.B)
+	}
+}
+
+// TestParseCommand_OpIsMiddleToken verifies that the operator is taken from position [1]
+// (infix notation: A op B) and A from [0], B from [2].
+func TestParseCommand_OpIsMiddleToken(t *testing.T) {
+	tokens := []string{"100", "multiply", "5"}
+	cmd, err := parser.ParseCommand(tokens)
+	if err != nil {
+		t.Fatalf("ParseCommand(%v) unexpected error: %v", tokens, err)
+	}
+	if cmd.A != tokens[0] {
+		t.Errorf("ParseCommand(%v).A = %q, want tokens[0] = %q", tokens, cmd.A, tokens[0])
+	}
+	if cmd.Op != tokens[1] {
+		t.Errorf("ParseCommand(%v).Op = %q, want tokens[1] = %q", tokens, cmd.Op, tokens[1])
+	}
+	if cmd.B != tokens[2] {
+		t.Errorf("ParseCommand(%v).B = %q, want tokens[2] = %q", tokens, cmd.B, tokens[2])
+	}
+}
+
+// TestParseCommand_OperatorNormalizedToLower verifies that uppercase operators are
+// normalized to lowercase (e.g. "ADD" -> "add", "DIVIDE" -> "divide").
+func TestParseCommand_OperatorNormalizedToLower(t *testing.T) {
+	tests := []struct {
+		tokens  []string
+		wantOp  string
+	}{
+		{[]string{"3", "ADD", "4"}, "add"},
+		{[]string{"10", "DIVIDE", "2"}, "divide"},
+		{[]string{"5", "MuLtIpLy", "3"}, "multiply"},
+		{[]string{"8", "SUBtract", "1"}, "subtract"},
+	}
+
+	for _, tt := range tests {
+		cmd, err := parser.ParseCommand(tt.tokens)
+		if err != nil {
+			t.Fatalf("ParseCommand(%v) unexpected error: %v", tt.tokens, err)
+		}
+		if cmd.Op != tt.wantOp {
+			t.Errorf("ParseCommand(%v).Op = %q, want %q (lowercase)", tt.tokens, cmd.Op, tt.wantOp)
+		}
+	}
+}
+
+// TestParseCommand_QuitCommand verifies ParseCommand(["quit"]) returns
+// Command{Op:"quit"} with no error (single-token command like exit).
+func TestParseCommand_QuitCommand(t *testing.T) {
+	tokens := []string{"quit"}
+	cmd, err := parser.ParseCommand(tokens)
+	if err != nil {
+		t.Fatalf("ParseCommand(%v) unexpected error: %v", tokens, err)
+	}
+	if cmd.Op != "quit" {
+		t.Errorf("ParseCommand(%v).Op = %q, want %q", tokens, cmd.Op, "quit")
+	}
+	if cmd.A != "" {
+		t.Errorf("ParseCommand(%v).A = %q, want empty string", tokens, cmd.A)
+	}
+	if cmd.B != "" {
+		t.Errorf("ParseCommand(%v).B = %q, want empty string", tokens, cmd.B)
+	}
+}
+
+// TestParseCommand_NoError_ThreeTokens verifies ParseCommand returns nil error for valid 3-token input.
+func TestParseCommand_NoError_ThreeTokens(t *testing.T) {
+	tokens := []string{"7", "-", "2"}
+	_, err := parser.ParseCommand(tokens)
+	if err != nil {
+		t.Errorf("ParseCommand(%v) error = %v, want nil", tokens, err)
+	}
+}
+
+// TestParseCommand_NoError_OneToken verifies ParseCommand returns nil error for a single-token command.
+func TestParseCommand_NoError_OneToken(t *testing.T) {
+	tokens := []string{"exit"}
+	_, err := parser.ParseCommand(tokens)
+	if err != nil {
+		t.Errorf("ParseCommand(%v) error = %v, want nil", tokens, err)
 	}
 }

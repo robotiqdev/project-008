@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"strings"
 
 	calcerrors "github.com/repo/calculator/internal/errors"
@@ -28,12 +27,10 @@ func Tokenize(line string) ([]string, error) {
 	return tokens, nil
 }
 
-// ParseCommand parses a raw input line into a Command.
-// Expected format: "A op B" (space-separated tokens).
-func ParseCommand(line string) (Command, error) {
-	fields := strings.Fields(line)
-	if len(fields) != 3 {
-		return Command{}, fmt.Errorf("invalid input: expected 3 tokens, got %d", len(fields))
-	}
-	return Command{A: fields[0], Op: fields[1], B: fields[2]}, nil
+// ParseCommand parses a slice of tokens into a Command.
+// For a single token (e.g. "exit"), only Op is set.
+// For three tokens (infix: A op B), all fields are set with Op normalized to lowercase.
+func ParseCommand(tokens []string) (Command, error) {
+	// stub: not yet implemented
+	return Command{}, nil
 }
