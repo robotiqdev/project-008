@@ -339,3 +339,35 @@ func TestParseCommand_NoError_OneToken(t *testing.T) {
 		t.Errorf("ParseCommand(%v) error = %v, want nil", tokens, err)
 	}
 }
+
+// TestIsExitCommand_ExitReturnsTrue verifies IsExitCommand returns true for Command{Op:"exit"}.
+func TestIsExitCommand_ExitReturnsTrue(t *testing.T) {
+	cmd := parser.Command{Op: "exit"}
+	if !parser.IsExitCommand(cmd) {
+		t.Errorf("IsExitCommand(%v) = false, want true", cmd)
+	}
+}
+
+// TestIsExitCommand_QuitReturnsTrue verifies IsExitCommand returns true for Command{Op:"quit"}.
+func TestIsExitCommand_QuitReturnsTrue(t *testing.T) {
+	cmd := parser.Command{Op: "quit"}
+	if !parser.IsExitCommand(cmd) {
+		t.Errorf("IsExitCommand(%v) = false, want true", cmd)
+	}
+}
+
+// TestIsExitCommand_AddReturnsFalse verifies IsExitCommand returns false for Command{Op:"add"}.
+func TestIsExitCommand_AddReturnsFalse(t *testing.T) {
+	cmd := parser.Command{Op: "add"}
+	if parser.IsExitCommand(cmd) {
+		t.Errorf("IsExitCommand(%v) = true, want false", cmd)
+	}
+}
+
+// TestIsExitCommand_PlusReturnsFalse verifies IsExitCommand returns false for Command{Op:"+"}.
+func TestIsExitCommand_PlusReturnsFalse(t *testing.T) {
+	cmd := parser.Command{Op: "+"}
+	if parser.IsExitCommand(cmd) {
+		t.Errorf("IsExitCommand(%v) = true, want false", cmd)
+	}
+}

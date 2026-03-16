@@ -27,6 +27,11 @@ func Tokenize(line string) ([]string, error) {
 	return tokens, nil
 }
 
+// IsExitCommand reports whether cmd is an exit or quit command.
+func IsExitCommand(cmd Command) bool {
+	panic("not implemented")
+}
+
 // ParseCommand parses a slice of tokens into a Command.
 // For a single token (e.g. "exit"), only Op is set.
 // For three tokens (infix: A op B), all fields are set with Op normalized to lowercase.
