@@ -1,5 +1,10 @@
 package parser
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Command holds the parsed tokens from a single calculator input line.
 type Command struct {
 	Op string
@@ -8,7 +13,11 @@ type Command struct {
 }
 
 // ParseCommand parses a raw input line into a Command.
-// This is a stub; the full implementation will be provided in TASK-4271.
+// Expected format: "A op B" (space-separated tokens).
 func ParseCommand(line string) (Command, error) {
-	return Command{}, nil
+	fields := strings.Fields(line)
+	if len(fields) != 3 {
+		return Command{}, fmt.Errorf("invalid input: expected 3 tokens, got %d", len(fields))
+	}
+	return Command{A: fields[0], Op: fields[1], B: fields[2]}, nil
 }
