@@ -11,3 +11,10 @@ func ParseNumber(s string) (float64, error) {
 	}
 	return v, nil
 }
+
+// Validate checks whether s is a valid numeric string.
+// Returns nil if valid, or an error if not.
+func Validate(s string) error {
+	_, err := ParseNumber(s)
+	return err
+}
