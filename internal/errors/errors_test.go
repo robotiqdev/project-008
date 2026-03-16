@@ -2,6 +2,7 @@ package errors_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -281,5 +282,87 @@ func TestHandleError_DoesNotWriteToStderr(t *testing.T) {
 
 	if buf.Len() == 0 {
 		t.Error("HandleError() did not write to the provided io.Writer; output may be going to stderr instead")
+	}
+}
+
+// TestHandleError_DivByZero_ExactOutput verifies that HandleError writes exactly
+// "Error: division by zero\n" to the buffer when passed ErrDivByZero.
+func TestHandleError_DivByZero_ExactOutput(t *testing.T) {
+	var buf bytes.Buffer
+	calcerrors.HandleError(calcerrors.ErrDivByZero, &buf)
+
+	got := buf.String()
+	want := "Error: division by zero\n"
+	if got != want {
+		t.Errorf("HandleError(ErrDivByZero) wrote %q, want %q", got, want)
+	}
+}
+
+// TestHandleError_NilError_IsNoOp verifies that HandleError does not panic and
+// writes nothing to the writer when passed a nil error.
+func TestHandleError_NilError_IsNoOp(t *testing.T) {
+	var buf bytes.Buffer
+	// Should not panic
+	calcerrors.HandleError(nil, &buf)
+
+	if buf.Len() != 0 {
+		t.Errorf("HandleError(nil) wrote %q to buffer, want nothing written", buf.String())
+	}
+}
+
+// TestHandleError_PlainError_WritesErrorString verifies that HandleError works with
+// a non-CalcError (plain errors.New) and writes its error string followed by a newline.
+func TestHandleError_PlainError_WritesErrorString(t *testing.T) {
+	plainErr := errors.New("something went wrong")
+	var buf bytes.Buffer
+	calcerrors.HandleError(plainErr, &buf)
+
+	got := buf.String()
+	want := "something went wrong\n"
+	if got != want {
+		t.Errorf("HandleError(plainErr) wrote %q, want %q", got, want)
+	}
+}
+
+// TestHandleError_AllSentinels_CorrectMessages verifies HandleError writes the correct
+// formatted message (with trailing newline) for each sentinel error.
+func TestHandleError_AllSentinels_CorrectMessages(t *testing.T) {
+	tests := []struct {
+		name string
+		err  *calcerrors.CalcError
+		want string
+	}{
+		{
+			name: "ErrDivByZero",
+			err:  calcerrors.ErrDivByZero,
+			want: "Error: division by zero\n",
+		},
+		{
+			name: "ErrInvalidInput",
+			err:  calcerrors.ErrInvalidInput,
+			want: "Error: invalid numeric input\n",
+		},
+		{
+			name: "ErrUnknownOp",
+			err:  calcerrors.ErrUnknownOp,
+			want: "Error: unknown operator\n",
+		},
+		{
+			name: "ErrInvalidTokenCount",
+			err:  calcerrors.ErrInvalidTokenCount,
+			want: "Error: usage: <number> <operator> <number>\n",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			calcerrors.HandleError(tc.err, &buf)
+
+			got := buf.String()
+			if got != tc.want {
+				t.Errorf("HandleError(%s) wrote %q, want %q", tc.name, got, tc.want)
+			}
+		})
 	}
 }
