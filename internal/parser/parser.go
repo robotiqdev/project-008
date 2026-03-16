@@ -18,8 +18,14 @@ type Command struct {
 // It returns a single-element slice for "exit" or "quit", a 3-element slice for
 // valid "A op B" expressions, or nil and ErrInvalidTokenCount otherwise.
 func Tokenize(line string) ([]string, error) {
-	_ = calcerrors.ErrInvalidTokenCount // stub: not yet implemented
-	return nil, nil
+	tokens := strings.Fields(line)
+	if len(tokens) == 1 && (tokens[0] == "exit" || tokens[0] == "quit") {
+		return tokens, nil
+	}
+	if len(tokens) != 3 {
+		return nil, calcerrors.ErrInvalidTokenCount
+	}
+	return tokens, nil
 }
 
 // ParseCommand parses a raw input line into a Command.
