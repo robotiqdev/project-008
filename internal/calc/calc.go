@@ -1,6 +1,8 @@
 package calc
 
 import (
+	"math"
+
 	calcerrors "github.com/repo/calculator/internal/errors"
 )
 
@@ -8,19 +10,24 @@ import (
 // Supported operators: "add", "+", "subtract", "-", "multiply", "*", "divide", "/"
 // Returns (0, ErrUnknownOp) for unrecognised operators.
 func Calculate(op string, a, b float64) (float64, error) {
+	var result float64
 	switch op {
 	case "add", "+":
-		return a + b, nil
+		result = a + b
 	case "subtract", "-":
-		return a - b, nil
+		result = a - b
 	case "multiply", "*":
-		return a * b, nil
+		result = a * b
 	case "divide", "/":
 		if b == 0 {
 			return 0, calcerrors.ErrDivByZero
 		}
-		return a / b, nil
+		result = a / b
 	default:
 		return 0, calcerrors.ErrUnknownOp
 	}
+	if math.IsInf(result, 0) || math.IsNaN(result) {
+		return 0, &calcerrors.CalcError{Code: calcerrors.ErrCodeInvalidInput, Message: "Error: result is not a finite number"}
+	}
+	return result, nil
 }
