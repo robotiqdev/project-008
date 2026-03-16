@@ -441,3 +441,168 @@ func TestCalculate_UnknownOp_ErrorMessage(t *testing.T) {
 		t.Errorf("error message = %q, want %q", err.Error(), want)
 	}
 }
+
+// --- Float64 edge-case tests (TASK-4278) ---
+// Inf/NaN outputs are rejected: Calculate must return (0, error) whenever the
+// arithmetic result would be +Inf, -Inf, or NaN, regardless of the operator.
+// The error code must be ErrCodeInvalidInput and the message must be
+// "Error: result is not a finite number".
+
+// TestCalculate_Multiply_Overflow_MaxFloat64TimesTwo verifies that multiplying
+// math.MaxFloat64 by 2 (which overflows to +Inf) returns (0, error) rather than +Inf.
+func TestCalculate_Multiply_Overflow_MaxFloat64TimesTwo(t *testing.T) {
+	result, err := calc.Calculate("multiply", math.MaxFloat64, 2)
+	if result != 0 {
+		t.Errorf("Calculate(\"multiply\", MaxFloat64, 2) result = %v, want 0", result)
+	}
+	if err == nil {
+		t.Fatal("Calculate(\"multiply\", MaxFloat64, 2): expected error for overflow, got nil")
+	}
+	wantMsg := "Error: result is not a finite number"
+	if err.Error() != wantMsg {
+		t.Errorf("error message = %q, want %q", err.Error(), wantMsg)
+	}
+	var calcErr *calcerrors.CalcError
+	if !errors.As(err, &calcErr) {
+		t.Fatalf("error is not a *CalcError: %T", err)
+	}
+	if calcErr.Code != calcerrors.ErrCodeInvalidInput {
+		t.Errorf("CalcError.Code = %v, want ErrCodeInvalidInput (%v)", calcErr.Code, calcerrors.ErrCodeInvalidInput)
+	}
+}
+
+// TestCalculate_Multiply_Overflow_SymbolicForm verifies the same overflow behaviour
+// through the "*" symbolic operator.
+func TestCalculate_Multiply_Overflow_SymbolicForm(t *testing.T) {
+	result, err := calc.Calculate("*", math.MaxFloat64, 2)
+	if result != 0 {
+		t.Errorf("Calculate(\"*\", MaxFloat64, 2) result = %v, want 0", result)
+	}
+	if err == nil {
+		t.Fatal("Calculate(\"*\", MaxFloat64, 2): expected error for overflow, got nil")
+	}
+	wantMsg := "Error: result is not a finite number"
+	if err.Error() != wantMsg {
+		t.Errorf("error message = %q, want %q", err.Error(), wantMsg)
+	}
+}
+
+// TestCalculate_Multiply_Overflow_NegativeInf verifies that multiplying
+// -math.MaxFloat64 by 2 (which overflows to -Inf) is also rejected.
+func TestCalculate_Multiply_Overflow_NegativeInf(t *testing.T) {
+	result, err := calc.Calculate("multiply", -math.MaxFloat64, 2)
+	if result != 0 {
+		t.Errorf("Calculate(\"multiply\", -MaxFloat64, 2) result = %v, want 0", result)
+	}
+	if err == nil {
+		t.Fatal("Calculate(\"multiply\", -MaxFloat64, 2): expected error for overflow, got nil")
+	}
+	wantMsg := "Error: result is not a finite number"
+	if err.Error() != wantMsg {
+		t.Errorf("error message = %q, want %q", err.Error(), wantMsg)
+	}
+}
+
+// TestCalculate_Add_Overflow_MaxFloat64PlusMaxFloat64 verifies that adding two
+// math.MaxFloat64 values (which overflows to +Inf) is rejected.
+func TestCalculate_Add_Overflow_MaxFloat64PlusMaxFloat64(t *testing.T) {
+	result, err := calc.Calculate("add", math.MaxFloat64, math.MaxFloat64)
+	if result != 0 {
+		t.Errorf("Calculate(\"add\", MaxFloat64, MaxFloat64) result = %v, want 0", result)
+	}
+	if err == nil {
+		t.Fatal("Calculate(\"add\", MaxFloat64, MaxFloat64): expected error for overflow, got nil")
+	}
+	wantMsg := "Error: result is not a finite number"
+	if err.Error() != wantMsg {
+		t.Errorf("error message = %q, want %q", err.Error(), wantMsg)
+	}
+	var calcErr *calcerrors.CalcError
+	if !errors.As(err, &calcErr) {
+		t.Fatalf("error is not a *CalcError: %T", err)
+	}
+	if calcErr.Code != calcerrors.ErrCodeInvalidInput {
+		t.Errorf("CalcError.Code = %v, want ErrCodeInvalidInput (%v)", calcErr.Code, calcerrors.ErrCodeInvalidInput)
+	}
+}
+
+// TestCalculate_Multiply_ZeroTimesZero_Valid verifies that 0 * 0 = 0 is accepted as valid.
+func TestCalculate_Multiply_ZeroTimesZero_Valid(t *testing.T) {
+	result, err := calc.Calculate("multiply", 0, 0)
+	if err != nil {
+		t.Fatalf("Calculate(\"multiply\", 0, 0): unexpected error: %v", err)
+	}
+	if result != 0 {
+		t.Errorf("Calculate(\"multiply\", 0, 0) = %v, want 0", result)
+	}
+}
+
+// TestCalculate_Multiply_VerySmallNumbers_Valid verifies that operations on very
+// small finite numbers near zero do not cause errors (underflow to 0 is acceptable).
+func TestCalculate_Multiply_VerySmallNumbers_Valid(t *testing.T) {
+	tests := []struct {
+		name string
+		a    float64
+		b    float64
+	}{
+		{"SmallestNonzero * SmallestNonzero", math.SmallestNonzeroFloat64, math.SmallestNonzeroFloat64},
+		{"SmallestNonzero * 1", math.SmallestNonzeroFloat64, 1},
+		{"1e-300 * 1e-300", 1e-300, 1e-300},
+		{"1e-200 * 1e-200", 1e-200, 1e-200},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			// Underflow to 0 produces a finite result (0), which is valid.
+			result, err := calc.Calculate("multiply", tc.a, tc.b)
+			if err != nil {
+				t.Fatalf("Calculate(\"multiply\", %v, %v): unexpected error: %v", tc.a, tc.b, err)
+			}
+			if math.IsInf(result, 0) || math.IsNaN(result) {
+				t.Errorf("Calculate(\"multiply\", %v, %v) = %v, want finite result", tc.a, tc.b, result)
+			}
+		})
+	}
+}
+
+// TestCalculate_Multiply_VerySmallNumbers_ResultIsFinite verifies that multiplying
+// very small numbers with moderate values stays finite.
+func TestCalculate_Multiply_VerySmallNumbers_ResultIsFinite(t *testing.T) {
+	result, err := calc.Calculate("multiply", 1e-150, 1e-150)
+	if err != nil {
+		t.Fatalf("Calculate(\"multiply\", 1e-150, 1e-150): unexpected error: %v", err)
+	}
+	if math.IsInf(result, 0) || math.IsNaN(result) {
+		t.Errorf("Calculate(\"multiply\", 1e-150, 1e-150) = %v, want finite result", result)
+	}
+}
+
+// TestCalculate_Overflow_ResultIsNotReturned verifies that when overflow produces +Inf,
+// the returned result value is 0 (not +Inf or any non-zero value).
+func TestCalculate_Overflow_ResultIsNotReturned(t *testing.T) {
+	overflowCases := []struct {
+		op string
+		a  float64
+		b  float64
+	}{
+		{"multiply", math.MaxFloat64, 2},
+		{"*", math.MaxFloat64, 3},
+		{"add", math.MaxFloat64, math.MaxFloat64},
+		{"+", math.MaxFloat64, math.MaxFloat64},
+	}
+	for _, tc := range overflowCases {
+		tc := tc
+		t.Run(tc.op, func(t *testing.T) {
+			result, err := calc.Calculate(tc.op, tc.a, tc.b)
+			if err == nil {
+				t.Errorf("Calculate(%q, %v, %v): expected error, got nil", tc.op, tc.a, tc.b)
+			}
+			if result != 0 {
+				t.Errorf("Calculate(%q, %v, %v) result = %v, want 0 on overflow", tc.op, tc.a, tc.b, result)
+			}
+			if math.IsInf(result, 0) || math.IsNaN(result) {
+				t.Errorf("Calculate(%q, %v, %v) = %v, Inf/NaN must never be returned", tc.op, tc.a, tc.b, result)
+			}
+		})
+	}
+}
