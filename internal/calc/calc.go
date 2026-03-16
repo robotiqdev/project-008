@@ -19,5 +19,8 @@ func Calculate(op string, a, b float64) (float64, error) {
 }
 
 func divide(a, b float64) (float64, error) {
+	if err := validateDivisor(b); err != nil {
+		return 0, err
+	}
 	return a / b, nil
 }
