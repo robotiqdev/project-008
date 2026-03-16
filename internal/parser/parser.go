@@ -29,7 +29,7 @@ func Tokenize(line string) ([]string, error) {
 
 // IsExitCommand reports whether cmd is an exit or quit command.
 func IsExitCommand(cmd Command) bool {
-	panic("not implemented")
+	return cmd.Op == "exit" || cmd.Op == "quit"
 }
 
 // ParseCommand parses a slice of tokens into a Command.
