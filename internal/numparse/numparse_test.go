@@ -141,3 +141,101 @@ func TestValidate_ValidInteger_ReturnsNil(t *testing.T) {
 		t.Errorf("Validate(\"42\") expected nil error, got: %v", err)
 	}
 }
+
+// TestParseNumber_EdgeCases tests edge-case inputs that should all be rejected.
+// The calculator only supports finite, well-formed numbers. Infinity and NaN are
+// not valid calculator inputs — they represent undefined states, not numeric values.
+func TestParseNumber_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		// All of these should be rejected with an error.
+	}{
+		// "+inf", "-inf", "Inf": strconv.ParseFloat accepts these as ±Infinity.
+		// Decision: reject them — the calculator only handles finite numbers.
+		{name: "plus inf literal", input: "+Inf"},
+		{name: "minus inf literal", input: "-Inf"},
+		{name: "inf literal", input: "Inf"},
+		{name: "inf lowercase", input: "inf"},
+		{name: "inf mixed case", input: "INF"},
+
+		// "NaN": strconv.ParseFloat accepts this as IEEE-754 NaN.
+		// Decision: reject it — NaN is not a valid calculator input.
+		{name: "NaN literal", input: "NaN"},
+		{name: "nan lowercase", input: "nan"},
+
+		// Very large numbers that overflow to ±Inf during parsing.
+		// strconv.ParseFloat returns ±Inf for values beyond float64 range.
+		// Decision: reject overflow results — the calculator only handles finite numbers.
+		{name: "positive overflow to inf", input: "1e309"},
+		{name: "negative overflow to neg inf", input: "-1e309"},
+
+		// Whitespace-padded strings: strconv.ParseFloat does NOT trim whitespace.
+		// Decision: reject — inputs must be clean numeric strings, no padding allowed.
+		{name: "leading space", input: " 3"},
+		{name: "trailing space", input: "3 "},
+		{name: "both spaces", input: " 3 "},
+		{name: "tab padded", input: "\t42"},
+
+		// Sign character without a following digit.
+		// Decision: reject — "+" and "-" alone are not valid numbers.
+		{name: "plus sign only", input: "+"},
+		{name: "minus sign only", input: "-"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := numparse.ParseNumber(tt.input)
+
+			// All edge-case inputs must be rejected with an error.
+			if err == nil {
+				t.Errorf("ParseNumber(%q) expected an error but got nil (value=%v)", tt.input, got)
+				return
+			}
+
+			// On error, return value must be 0.
+			if got != 0 {
+				t.Errorf("ParseNumber(%q) on error expected return value 0, got %v", tt.input, got)
+			}
+
+			// The error must satisfy errors.Is(err, ErrInvalidInput).
+			if !errors.Is(err, calcerrors.ErrInvalidInput) {
+				t.Errorf("ParseNumber(%q) error should satisfy errors.Is(err, ErrInvalidInput), got: %v (type: %T)", tt.input, err, err)
+			}
+		})
+	}
+}
+
+// TestParseNumber_InfResult_IsNotInf verifies that any value returned by a
+// successful ParseNumber call is never ±Inf. This is the post-condition enforced
+// by the implementation: only finite results are allowed through.
+func TestParseNumber_InfResult_IsNotInf(t *testing.T) {
+	// These inputs currently cause strconv.ParseFloat to return ±Inf.
+	// The implementation must intercept them and return an error instead.
+	infInputs := []string{"+Inf", "-Inf", "Inf", "inf", "1e309", "-1e309"}
+	for _, s := range infInputs {
+		t.Run(s, func(t *testing.T) {
+			got, err := numparse.ParseNumber(s)
+			if err == nil && math.IsInf(got, 0) {
+				// The implementation let an Inf value through — that is the bug being fixed.
+				t.Errorf("ParseNumber(%q) returned Inf without error; implementation must reject Inf results", s)
+			}
+		})
+	}
+}
+
+// TestParseNumber_NaNResult_IsNotNaN verifies that any value returned by a
+// successful ParseNumber call is never NaN. The implementation must intercept
+// NaN results from strconv.ParseFloat and return an error instead.
+func TestParseNumber_NaNResult_IsNotNaN(t *testing.T) {
+	nanInputs := []string{"NaN", "nan", "NAN"}
+	for _, s := range nanInputs {
+		t.Run(s, func(t *testing.T) {
+			got, err := numparse.ParseNumber(s)
+			if err == nil && math.IsNaN(got) {
+				// The implementation let a NaN value through — that is the bug being fixed.
+				t.Errorf("ParseNumber(%q) returned NaN without error; implementation must reject NaN results", s)
+			}
+		})
+	}
+}
