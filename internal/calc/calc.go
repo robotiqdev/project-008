@@ -16,6 +16,9 @@ func Calculate(op string, a, b float64) (float64, error) {
 	case "multiply", "*":
 		return a * b, nil
 	case "divide", "/":
+		if b == 0 {
+			return 0, calcerrors.ErrDivByZero
+		}
 		return a / b, nil
 	default:
 		return 0, calcerrors.ErrUnknownOp
