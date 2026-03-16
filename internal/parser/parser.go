@@ -31,6 +31,8 @@ func Tokenize(line string) ([]string, error) {
 // For a single token (e.g. "exit"), only Op is set.
 // For three tokens (infix: A op B), all fields are set with Op normalized to lowercase.
 func ParseCommand(tokens []string) (Command, error) {
-	// stub: not yet implemented
-	return Command{}, nil
+	if len(tokens) == 1 {
+		return Command{Op: tokens[0]}, nil
+	}
+	return Command{Op: strings.ToLower(tokens[1]), A: tokens[0], B: tokens[2]}, nil
 }
